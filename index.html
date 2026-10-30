@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>Дембельский питомец</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f1ea;--card:#fff;--tx:#222;--mut:#6b6b6b;--ac:#4a7c3f;--acs:#e6eedf;--bd:#ddd8cc;--r1:#dfeede;--r2:#f4f1ea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151814;--card:#20241e;--tx:#ecebe4;--mut:#a1a398;--ac:#8bc47c;--acs:#2a3326;--bd:#363c32;--r1:#27352a;--r2:#151814}}
+:root[data-theme="dark"]{--bg:#151814;--card:#20241e;--tx:#ecebe4;--mut:#a1a398;--ac:#8bc47c;--acs:#2a3326;--bd:#363c32;--r1:#27352a;--r2:#151814}
+html,body{height:auto;margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+#app{max-width:460px;margin:0 auto;padding:14px 14px 90px}
+h1{font-size:22px;margin:8px 0}h2{font-size:18px;margin:6px 0}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin:12px 0}
+.mut{color:var(--mut);font-size:14px}
+input,button{font:inherit}
+input[type=text],input[type=date]{width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);box-sizing:border-box}
+label{display:block;margin:10px 0 4px;font-size:14px;color:var(--mut)}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--ac);color:var(--bg);font-weight:600;cursor:pointer}
+button.sec{background:var(--acs);color:var(--tx)}
+button:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.big{font-size:42px;font-weight:700;text-align:center;line-height:1.1}
+.sub{text-align:center;color:var(--mut)}
+.bar{height:12px;background:var(--acs);border-radius:8px;overflow:hidden;margin:10px 0 4px}
+.bar>i{display:block;height:100%;background:var(--ac);border-radius:8px}
+.room{border-radius:16px;padding:8px 0;background:linear-gradient(var(--r1),var(--r2));text-align:center;position:relative}
+.room svg{width:230px;max-width:80%;height:auto;cursor:pointer;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.eye{animation:blink 5s infinite;transform-box:fill-box;transform-origin:center}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.heart{position:absolute;font-size:24px;animation:up 1s forwards;pointer-events:none}
+@keyframes up{to{transform:translateY(-70px);opacity:0}}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs button{flex:1;max-width:115px;background:none;color:var(--mut);border-radius:0;padding:12px 4px;font-size:13px}
+.tabs button.on{color:var(--ac)}
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.item:last-child{border:0}.item .e{font-size:28px;width:38px;text-align:center}.item .t{flex:1}
+.pick{display:flex;gap:8px}.pick button{flex:1;background:var(--acs);color:var(--tx);padding:10px 4px;border:2px solid transparent}
+.pick button.on{border-color:var(--ac)}
+.done{opacity:1}.lock{opacity:.45}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+var BOT_LINK="https://t.me/YOUR_BOT_USERNAME/app"; /* ЗАМЕНИТЕ на ссылку вашего Mini App */
+var KEY="dembel-pet-v1",S=null,tab="pet",draft={sp:"cat"};
+var TG=window.Telegram&&Telegram.WebApp,IN=!!(TG&&TG.initData),CS=IN&&TG.CloudStorage?TG.CloudStorage:null;
+if(IN){TG.ready();TG.expand();document.documentElement.setAttribute("data-theme",TG.colorScheme==="dark"?"dark":"light");try{TG.setHeaderColor("bg_color")}catch(e){}}
+function save(){var j=JSON.stringify(S);try{localStorage.setItem(KEY,j)}catch(e){}if(CS&&S){try{CS.setItem(KEY,j)}catch(e){}}}
+function load(cb){var done=false,loc=null;try{loc=localStorage.getItem(KEY)}catch(e){}
+ function fin(v){if(done)return;done=true;try{S=v?JSON.parse(v):null}catch(e){S=null}cb()}
+ if(CS){try{CS.getItem(KEY,function(err,v){fin(!err&&v?v:loc)});setTimeout(function(){fin(loc)},2500)}catch(e){fin(loc)}}else fin(loc)}
+function hap(t){try{if(IN&&TG.HapticFeedback)TG.HapticFeedback.notificationOccurred(t||"success")}catch(e){}}
+function ds(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function pd(s){return new Date(s+"T00:00:00")}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+var SPECIES={cat:{n:"Котик",c:"#e9a35b"},bear:{n:"Мишка",c:"#a67c52"},blob:{n:"Зверёк",c:"#7fb7be"}};
+var STAGES=[[0,"Яйцо",.5],[.08,"Малыш",.65],[.25,"Юный",.8],[.5,"Взрослый",.9],[.75,"Закалённый",1],[.95,"Дембель",1.07]];
+var ITEMS=[
+{id:"cap",e:"🧢",n:"Кепка",p:30,k:"a"},{id:"glass",e:"🕶",n:"Очки",p:40,k:"a"},
+{id:"scarf",e:"🧣",n:"Шарф",p:50,k:"a"},{id:"medal",e:"🎖",n:"Медаль",p:80,k:"a"},
+{id:"star",e:"⭐",n:"Звезда",p:60,k:"a"},
+{id:"r1",e:"🌿",n:"Комната «Лес»",p:70,k:"r",a:"#cfe8c6",b:"#f4f1ea"},
+{id:"r2",e:"🌅",n:"Комната «Закат»",p:90,k:"r",a:"#f6d3a8",b:"#f4e6d6"},
+{id:"r3",e:"🌌",n:"Комната «Ночь»",p:120,k:"r",a:"#2c3a63",b:"#151a2e"}];
+var POS={cap:[0,-42,46],glass:[0,6,40],scarf:[0,52,44],medal:[30,44,30],star:[-36,-34,28]};
+function calc(){
+ var now=new Date(),s=pd(S.start),e=pd(S.end),tot=e-s,p=Math.min(1,Math.max(0,(now-s)/tot)),left=e-now;
+ var i=0;STAGES.forEach(function(g,k){if(p>=g[0])i=k});
+ return{p:p,left:left,done:left<=0,i:i,daysLeft:Math.ceil(left/864e5),total:Math.round(tot/864e5),passed:Math.floor((now-s)/864e5)}}
+function pet(c,worn){
+ var sp=SPECIES[S.sp],st=STAGES[c.i],sc=st[2],col=sp.c,b="";
+ if(c.i===0){
+  b='<ellipse cx="0" cy="12" rx="40" ry="52" fill="#f6efe0" stroke="#c9b99a" stroke-width="3"/><path d="M-20 -8l10 10 8-12 10 12 10-10" fill="none" stroke="#c9b99a" stroke-width="3"/><circle cx="-12" cy="30" r="5" fill="'+col+'" opacity=".6"/><circle cx="14" cy="40" r="4" fill="'+col+'" opacity=".6"/>';
+ }else{
+  var ears=S.sp==="cat"?'<path d="M-40 -18l6-40 30 24z M40 -18l-6-40-30 24z" fill="'+col+'"/>':S.sp==="bear"?'<circle cx="-36" cy="-30" r="16" fill="'+col+'"/><circle cx="36" cy="-30" r="16" fill="'+col+'"/>':'<path d="M0 -44v-20" stroke="'+col+'" stroke-width="4"/><circle cx="0" cy="-66" r="7" fill="#e86a5b"/>';
+  b=ears+'<ellipse cx="0" cy="8" rx="52" ry="46" fill="'+col+'"/><ellipse cx="0" cy="22" rx="30" ry="22" fill="#fff" opacity=".35"/><circle class="eye" cx="-18" cy="2" r="6" fill="#222"/><circle class="eye" cx="18" cy="2" r="6" fill="#222"/><circle cx="-33" cy="16" r="6" fill="#ff8a8a" opacity=".5"/><circle cx="33" cy="16" r="6" fill="#ff8a8a" opacity=".5"/><path d="M-9 18q9 9 18 0" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>';
+  worn.forEach(function(id){var q=POS[id];if(q)b+='<text x="'+q[0]+'" y="'+q[1]+'" font-size="'+q[2]+'" text-anchor="middle" dominant-baseline="middle">'+ITEMS.filter(function(x){return x.id===id})[0].e+'</text>'});
+  if(c.i===5)b+='<text x="0" y="-76" font-size="22" text-anchor="middle">🎉</text>';
+ }
+ return'<svg viewBox="0 0 200 200" id="pet" aria-label="Питомец"><g transform="translate(100 110) scale('+sc+')">'+b+'</g></svg>'}
+function ach(c){
+ var d=c.daysLeft;
+ return[["🌱","Первый день","Вы начали путь",true],["📅","Первая неделя","Прошло 7 дней",c.passed>=7],
+ ["🔟","10% позади","Начало положено",c.p>=.1],["🌓","Четверть пути","25% службы",c.p>=.25],
+ ["⚖️","Середина","50% службы",c.p>=.5],["⛰","Три четверти","75% службы",c.p>=.75],
+ ["💯","Сто дней","Осталось ≤ 100 дней",d<=100],["🔥","Месяц","Осталось ≤ 30 дней",d<=30],
+ ["🛒","Первая покупка","Купили предмет",S.owned.length>0],["🏁","Дембель","Служба окончена",c.done]]}
+function onboard(){
+ var t=ds(new Date());
+ document.getElementById("app").innerHTML='<h1>🐣 Дембельский питомец</h1><p class="mut">Питомец растёт вместе со сроком службы. Никаких штрафов и обязанностей: он не грустит, если вы не заходили.</p><div class="card"><label>Имя питомца</label><input type="text" id="nm" maxlength="16" placeholder="Например, Рядовой"><label>Кто это будет?</label><div class="pick" id="pk">'+Object.keys(SPECIES).map(function(k){return'<button data-k="'+k+'" class="'+(draft.sp===k?"on":"")+'">'+SPECIES[k].n+'</button>'}).join("")+'</div><label>Дата начала службы</label><input type="date" id="sd" value="'+(draft.sd||t)+'"><label>Дата дембеля</label><input type="date" id="ed" value="'+(draft.ed||"")+'"><p class="mut">Храним только эти даты и имя, и только на вашем устройстве. Часть, город и другие данные не нужны.</p><button id="go" style="width:100%">Начать</button><p id="er" class="mut"></p></div>';
+ document.getElementById("pk").onclick=function(e){var k=e.target.getAttribute("data-k");if(k){draft.sp=k;draft.nm=document.getElementById("nm").value;draft.sd=document.getElementById("sd").value;draft.ed=document.getElementById("ed").value;onboard();document.getElementById("nm").value=draft.nm||""}};
+ document.getElementById("go").onclick=function(){
+  var sd=document.getElementById("sd").value,ed=document.getElementById("ed").value,er=document.getElementById("er");
+  if(!sd||!ed||pd(ed)<=pd(sd)){er.textContent="Проверьте даты: дембель должен быть позже начала службы.";return}
+  S={start:sd,end:ed,name:document.getElementById("nm").value.trim()||SPECIES[draft.sp].n,sp:draft.sp,coins:10,lastClaim:ds(new Date()),owned:[],worn:[],room:"",pat:{d:"",n:0}};
+  save();tab="pet";render()}}
+function render(){
+ if(!S){onboard();return}
+ var c=calc(),A=document.getElementById("app"),h="";
+ if(tab==="pet"){
+  var rm=ITEMS.filter(function(x){return x.id===S.room})[0],bg=rm?' style="background:linear-gradient('+rm.a+','+rm.b+')"':"";
+  var claim=S.lastClaim!==ds(new Date());
+  h+='<h1>'+esc(S.name)+' <span class="mut" style="font-size:15px">· '+STAGES[c.i][1]+'</span></h1><div class="room" id="room"'+bg+'>'+pet(c,S.worn)+'</div><p class="sub" style="margin:4px">Нажмите на питомца, чтобы погладить</p>'
+  +'<div class="card">'+(c.done?'<div class="big">🎉 Дембель!</div><p class="sub">Служба окончена. Питомец достиг финальной формы.</p>':'<div class="sub">До дембеля</div><div class="big" id="dl">'+c.daysLeft+' дн.</div><div class="sub" id="hm"></div>')
+  +'<div class="bar"><i style="width:'+(c.p*100).toFixed(1)+'%"></i></div><div class="mut" style="display:flex;justify-content:space-between"><span>Пройдено '+(c.p*100).toFixed(1)+'%</span><span>Всего '+c.total+' дн.</span></div></div>'
+  +'<div class="card row" style="align-items:center;justify-content:space-between"><div>🪙 <b>'+S.coins+'</b> монет</div>'+(claim?'<button id="cl">Забрать +10 за сегодня</button>':'<span class="mut">Награда за сегодня получена</span>')+'</div>'
+  +'<div class="card"><button id="sh" class="sec" style="width:100%">📤 Поделиться своим сроком</button><p class="mut" style="margin:8px 0 0">Только текст, без личных данных. Отправляйте тем, кому хотите.</p></div>'
+ }
+ if(tab==="shop"){
+  h+='<h1>🛒 Магазин</h1><p class="mut">Монеты: <b>'+S.coins+'</b>. Монеты начисляются раз в день и за поглаживания.</p><div class="card">'+ITEMS.map(function(x){
+   var own=S.owned.indexOf(x.id)>=0,on=x.k==="a"?S.worn.indexOf(x.id)>=0:S.room===x.id;
+   return'<div class="item"><div class="e">'+x.e+'</div><div class="t">'+x.n+'<div class="mut">'+(own?"Куплено":x.p+" монет")+'</div></div>'+(own?'<button class="sec" data-w="'+x.id+'">'+(on?"Снять":"Надеть")+'</button>':'<button data-b="'+x.id+'"'+(S.coins<x.p?" disabled":"")+'>Купить</button>')+'</div>'}).join("")+'</div>'}
+ if(tab==="ach"){
+  var L=ach(c),n=L.filter(function(x){return x[3]}).length;
+  h+='<h1>🏅 Награды</h1><p class="mut">Открыто '+n+' из '+L.length+'</p><div class="card">'+L.map(function(x){return'<div class="item '+(x[3]?"done":"lock")+'"><div class="e">'+(x[3]?x[0]:"🔒")+'</div><div class="t">'+x[1]+'<div class="mut">'+x[2]+'</div></div></div>'}).join("")+'</div>'
+  +'<div class="card"><b>Этапы питомца</b>'+STAGES.map(function(g,k){return'<div class="item '+(k<=c.i?"":"lock")+'"><div class="t">'+g[1]+'</div><div class="mut">с '+Math.round(g[0]*100)+'%</div></div>'}).join("")+'</div>'}
+ if(tab==="set"){
+  h+='<h1>⚙️ Настройки</h1><div class="card"><label>Имя питомца</label><input type="text" id="rn" maxlength="16" value="'+esc(S.name)+'"><label>Дата начала службы</label><input type="date" id="rs" value="'+S.start+'"><label>Дата дембеля</label><input type="date" id="re" value="'+S.end+'"><div class="row" style="margin-top:12px"><button id="sv">Сохранить</button><button id="rst" class="sec">Начать заново</button></div><p id="se" class="mut"></p></div><div class="card mut">Данные хранятся только в этом браузере. Приложение работает без интернета. Питомец растёт по календарю и не наказывает за пропуски.</div>'}
+ A.innerHTML=h+'<div class="tabs">'+[["pet","🐾","Питомец"],["shop","🛒","Магазин"],["ach","🏅","Награды"],["set","⚙️","Опции"]].map(function(t){return'<button data-t="'+t[0]+'" class="'+(tab===t[0]?"on":"")+'">'+t[1]+'<br>'+t[2]+'</button>'}).join("")+'</div>';
+ bind(c);tick()}
+function bind(c){
+ var q=function(i){return document.getElementById(i)};
+ document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){tab=b.getAttribute("data-t");render()}});
+ if(q("cl"))q("cl").onclick=function(){S.coins+=10;S.lastClaim=ds(new Date());save();render()};
+ if(q("pet"))q("pet").onclick=function(e){
+  var t=ds(new Date());if(S.pat.d!==t)S.pat={d:t,n:0};
+  var r=q("room"),h=document.createElement("span");h.className="heart";h.textContent="❤️";h.style.left=(30+Math.random()*40)+"%";h.style.top="40%";r.appendChild(h);setTimeout(function(){h.remove()},1000);
+  if(S.pat.n<5){S.pat.n++;S.coins++;save()}try{if(IN)TG.HapticFeedback.impactOccurred("light")}catch(e){}};
+ if(q("sh"))q("sh").onclick=function(){
+  var txt=c.done?"Дембель наступил! 🎉":"До дембеля "+c.daysLeft+" дн. ("+(c.p*100).toFixed(0)+"% пройдено). Питомец "+S.name+" уже "+STAGES[c.i][1].toLowerCase()+" 🐾";
+  if(IN){TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(BOT_LINK)+"&text="+encodeURIComponent(txt))}else if(navigator.share){navigator.share({text:txt}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){q("sh").textContent="Скопировано ✓"})}else{prompt("Скопируйте текст:",txt)}};
+ document.querySelectorAll("[data-b]").forEach(function(b){b.onclick=function(){var x=ITEMS.filter(function(i){return i.id===b.getAttribute("data-b")})[0];if(S.coins>=x.p){S.coins-=x.p;hap();S.owned.push(x.id);if(x.k==="a")S.worn.push(x.id);else S.room=x.id;save();render()}}});
+ document.querySelectorAll("[data-w]").forEach(function(b){b.onclick=function(){var id=b.getAttribute("data-w"),x=ITEMS.filter(function(i){return i.id===id})[0];
+  if(x.k==="a"){var k=S.worn.indexOf(id);if(k>=0)S.worn.splice(k,1);else S.worn.push(id)}else S.room=S.room===id?"":id;save();render()}});
+ if(q("sv"))q("sv").onclick=function(){var s=q("rs").value,e=q("re").value;if(!s||!e||pd(e)<=pd(s)){q("se").textContent="Проверьте даты.";return}
+  S.start=s;S.end=e;S.name=q("rn").value.trim()||S.name;save();tab="pet";render()};
+ if(q("rst"))q("rst").onclick=function(){if(confirm("Удалить прогресс и начать заново?")){S=null;draft={sp:"cat"};try{localStorage.removeItem(KEY)}catch(e){}if(CS){try{CS.removeItem(KEY)}catch(e){}}render()}}}
+function tick(){
+ if(!S||tab!=="pet")return;var el=document.getElementById("hm");if(!el)return;
+ var l=Math.max(0,pd(S.end)-new Date()),h=Math.floor(l/36e5)%24,m=Math.floor(l/6e4)%60,s=Math.floor(l/1e3)%60;
+ el.textContent=h+" ч "+m+" мин "+s+" с"}
+setInterval(tick,1000);load(function(){render()});
+</script>
+</body>
+</html>
