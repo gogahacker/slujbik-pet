@@ -50,7 +50,10 @@ var BOT_LINK="https://t.me/YOUR_BOT_USERNAME/app"; /* ЗАМЕНИТЕ на сс
 var KEY="dembel-pet-v1",S=null,tab="pet",draft={sp:"cat"};
 var TG=window.Telegram&&Telegram.WebApp,IN=!!(TG&&TG.initData),CS=IN&&TG.CloudStorage?TG.CloudStorage:null;
 if(IN){TG.ready();TG.expand();document.documentElement.setAttribute("data-theme",TG.colorScheme==="dark"?"dark":"light");try{TG.setHeaderColor("bg_color")}catch(e){}}
-function save(){var j=JSON.stringify(S);try{localStorage.setItem(KEY,j)}catch(e){}if(CS&&S){try{CS.setItem(KEY,j)}catch(e){}}}
+var API_BASE=location.origin,API_OK=false,ROLE="USER",gameState=null;
+function api(path,method,body){return fetch(API_BASE+path,{method:method||"GET",headers:Object.assign({"Content-Type":"application/json"},IN?{"Authorization":"tma "+TG.initData}:{}),body:body?JSON.stringify(body):undefined}).then(function(r){if(!r.ok)return r.json().then(function(x){throw new Error(x.detail||"API error")});return r.json()})}
+function serverSync(){if(!IN||!S)return;api("/api/sync","PUT",{pet_name:S.name,pet_type:S.sp,service_start:S.start,demob_date:S.end,progress:{owned:S.owned,worn:S.worn,room:S.room,pat:S.pat},settings:{}}).catch(function(e){console.warn("Sync failed",e)})}
+function save(){var j=JSON.stringify(S);try{localStorage.setItem(KEY,j)}catch(e){}if(CS&&S){try{CS.setItem(KEY,j)}catch(e){}}serverSync()}
 function load(cb){var done=false,loc=null;try{loc=localStorage.getItem(KEY)}catch(e){}
  function fin(v){if(done)return;done=true;try{S=v?JSON.parse(v):null}catch(e){S=null}cb()}
  if(CS){try{CS.getItem(KEY,function(err,v){fin(!err&&v?v:loc)});setTimeout(function(){fin(loc)},2500)}catch(e){fin(loc)}}else fin(loc)}
@@ -61,12 +64,12 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;
 var SPECIES={cat:{n:"Котик",c:"#e9a35b"},bear:{n:"Мишка",c:"#a67c52"},blob:{n:"Зверёк",c:"#7fb7be"}};
 var STAGES=[[0,"Яйцо",.5],[.08,"Малыш",.65],[.25,"Юный",.8],[.5,"Взрослый",.9],[.75,"Закалённый",1],[.95,"Дембель",1.07]];
 var ITEMS=[
-{id:"cap",e:"🧢",n:"Кепка",p:1,k:"a"},{id:"glass",e:"🕶",n:"Очки",p:40,k:"a"},
-{id:"scarf",e:"🧣",n:"Шарф",p:1,k:"a"},{id:"medal",e:"🎖",n:"Медаль",p:80,k:"a"},
-{id:"star",e:"⭐",n:"Звезда",p:1,k:"a"},
-{id:"r1",e:"🌿",n:"Комната «Лес»",p:1,k:"r",a:"#cfe8c6",b:"#f4f1ea"},
-{id:"r2",e:"🌅",n:"Комната «Закат»",p:1,k:"r",a:"#f6d3a8",b:"#f4e6d6"},
-{id:"r3",e:"🌌",n:"Комната «Ночь»",p:1,k:"r",a:"#2c3a63",b:"#151a2e"}];
+{id:"cap",e:"🧢",n:"Кепка",p:30,k:"a"},{id:"glass",e:"🕶",n:"Очки",p:40,k:"a"},
+{id:"scarf",e:"🧣",n:"Шарф",p:50,k:"a"},{id:"medal",e:"🎖",n:"Медаль",p:80,k:"a"},
+{id:"star",e:"⭐",n:"Звезда",p:60,k:"a"},
+{id:"r1",e:"🌿",n:"Комната «Лес»",p:70,k:"r",a:"#cfe8c6",b:"#f4f1ea"},
+{id:"r2",e:"🌅",n:"Комната «Закат»",p:90,k:"r",a:"#f6d3a8",b:"#f4e6d6"},
+{id:"r3",e:"🌌",n:"Комната «Ночь»",p:120,k:"r",a:"#2c3a63",b:"#151a2e"}];
 var POS={cap:[0,-42,46],glass:[0,6,40],scarf:[0,52,44],medal:[30,44,30],star:[-36,-34,28]};
 function calc(){
  var now=new Date(),s=pd(S.start),e=pd(S.end),tot=e-s,p=Math.min(1,Math.max(0,(now-s)/tot)),left=e-now;
@@ -119,32 +122,81 @@ function render(){
   var L=ach(c),n=L.filter(function(x){return x[3]}).length;
   h+='<h1>🏅 Награды</h1><p class="mut">Открыто '+n+' из '+L.length+'</p><div class="card">'+L.map(function(x){return'<div class="item '+(x[3]?"done":"lock")+'"><div class="e">'+(x[3]?x[0]:"🔒")+'</div><div class="t">'+x[1]+'<div class="mut">'+x[2]+'</div></div></div>'}).join("")+'</div>'
   +'<div class="card"><b>Этапы питомца</b>'+STAGES.map(function(g,k){return'<div class="item '+(k<=c.i?"":"lock")+'"><div class="t">'+g[1]+'</div><div class="mut">с '+Math.round(g[0]*100)+'%</div></div>'}).join("")+'</div>'}
+ if(tab==="games"){
+  h+='<h1>🎮 Игры</h1><p class="mut">Тренируйте память, порядок и счёт. Ответы проверяются сервером.</p><div class="card"><div class="item"><div class="e">🧠</div><div class="t"><b>Армейская память</b><div class="mut">Запомните последовательность предметов</div></div><button data-game="memory">Играть</button></div><div class="item"><div class="e">🛏️</div><div class="t"><b>Казарменный порядок</b><div class="mut">Расставьте предметы по местам</div></div><button data-game="barracks">Играть</button></div><div class="item"><div class="e">🔢</div><div class="t"><b>Дембельский счёт</b><div class="mut">Решите армейскую задачку</div></div><button data-game="demob_math">Играть</button></div></div><div id="gamebox"></div><div class="card"><b>🏆 Таблица рекордов</b><div id="leader" class="mut">Загрузка…</div></div>';
+ }
+ if(tab==="admin" && ROLE!=="USER"){
+  h+='<h1>🛡️ Админ-панель</h1><div class="row"><button class="sec" data-admin="stats">Статистика</button><button class="sec" data-admin="users">Пользователи</button><button class="sec" data-admin="products">Магазин</button><button class="sec" data-admin="logs">Журнал</button><button class="sec" data-admin="settings">Настройки</button></div><div id="adminbox" class="card">Выберите раздел.</div>';
+ }
  if(tab==="set"){
   h+='<h1>⚙️ Настройки</h1><div class="card"><label>Имя питомца</label><input type="text" id="rn" maxlength="16" value="'+esc(S.name)+'"><label>Дата начала службы</label><input type="date" id="rs" value="'+S.start+'"><label>Дата дембеля</label><input type="date" id="re" value="'+S.end+'"><div class="row" style="margin-top:12px"><button id="sv">Сохранить</button><button id="rst" class="sec">Начать заново</button></div><p id="se" class="mut"></p></div><div class="card mut">Данные хранятся только в этом браузере. Приложение работает без интернета. Питомец растёт по календарю и не наказывает за пропуски.</div>'}
- A.innerHTML=h+'<div class="tabs">'+[["pet","🐾","Питомец"],["shop","🛒","Магазин"],["ach","🏅","Награды"],["set","⚙️","Опции"]].map(function(t){return'<button data-t="'+t[0]+'" class="'+(tab===t[0]?"on":"")+'">'+t[1]+'<br>'+t[2]+'</button>'}).join("")+'</div>';
+ A.innerHTML=h+'<div class="tabs">'+[["pet","🐾","Питомец"],["shop","🛒","Магазин"],["games","🎮","Игры"],["ach","🏅","Награды"],["set","⚙️","Опции"]].concat(ROLE!=="USER"?[["admin","🛡️","Админка"]]:[]).map(function(t){return'<button data-t="'+t[0]+'" class="'+(tab===t[0]?"on":"")+'">'+t[1]+'<br>'+t[2]+'</button>'}).join("")+'</div>';
  bind(c);tick()}
 function bind(c){
  var q=function(i){return document.getElementById(i)};
  document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){tab=b.getAttribute("data-t");render()}});
- if(q("cl"))q("cl").onclick=function(){S.coins+=10;S.lastClaim=ds(new Date());save();render()};
+ if(q("cl"))q("cl").onclick=function(){if(IN){api("/api/claim-daily","POST").then(function(r){S.coins=r.coins;S.lastClaim=r.last_daily;save();render()}).catch(function(e){alert(e.message)})}else{S.coins+=10;S.lastClaim=ds(new Date());save();render()}};
  if(q("pet"))q("pet").onclick=function(e){
   var t=ds(new Date());if(S.pat.d!==t)S.pat={d:t,n:0};
   var r=q("room"),h=document.createElement("span");h.className="heart";h.textContent="❤️";h.style.left=(30+Math.random()*40)+"%";h.style.top="40%";r.appendChild(h);setTimeout(function(){h.remove()},1000);
-  if(S.pat.n<5){S.pat.n++;S.coins++;save()}try{if(IN)TG.HapticFeedback.impactOccurred("light")}catch(e){}};
+  if(S.pat.n<5){S.pat.n++;save()}try{if(IN)TG.HapticFeedback.impactOccurred("light")}catch(e){}};
  if(q("sh"))q("sh").onclick=function(){
   var txt=c.done?"Дембель наступил! 🎉":"До дембеля "+c.daysLeft+" дн. ("+(c.p*100).toFixed(0)+"% пройдено). Питомец "+S.name+" уже "+STAGES[c.i][1].toLowerCase()+" 🐾";
   if(IN){TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(BOT_LINK)+"&text="+encodeURIComponent(txt))}else if(navigator.share){navigator.share({text:txt}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){q("sh").textContent="Скопировано ✓"})}else{prompt("Скопируйте текст:",txt)}};
- document.querySelectorAll("[data-b]").forEach(function(b){b.onclick=function(){var x=ITEMS.filter(function(i){return i.id===b.getAttribute("data-b")})[0];if(S.coins>=x.p){S.coins-=x.p;hap();S.owned.push(x.id);if(x.k==="a")S.worn.push(x.id);else S.room=x.id;save();render()}}});
- document.querySelectorAll("[data-w]").forEach(function(b){b.onclick=function(){var id=b.getAttribute("data-w"),x=ITEMS.filter(function(i){return i.id===id})[0];
-  if(x.k==="a"){var k=S.worn.indexOf(id);if(k>=0)S.worn.splice(k,1);else S.worn.push(id)}else S.room=S.room===id?"":id;save();render()}});
+ document.querySelectorAll("[data-b]").forEach(function(b){b.onclick=function(){var x=ITEMS.filter(function(i){return i.id===b.getAttribute("data-b")})[0];if(S.coins>=x.p){var slug=({"r1":"room-forest","r2":"room-sunset","r3":"room-night"})[x.id]||x.id;if(IN){api("/api/shop/buy/"+slug,"POST").then(function(r){S.coins=r.coins;S.owned.push(x.id);api("/api/shop/equip/"+slug,"POST").then(function(eq){if(x.k==="a"&&eq.equipped)S.worn.push(x.id);else if(x.k!=="a"&&eq.equipped)S.room=x.id;hap();save();render()}).catch(function(e){alert("Покупка выполнена, но экипировка не обновилась: "+e.message);save();render()})}).catch(function(e){alert(e.message)})}else{S.coins-=x.p;hap();S.owned.push(x.id);if(x.k==="a")S.worn.push(x.id);else S.room=x.id;save();render()}}}});
+ document.querySelectorAll("[data-w]").forEach(function(b){b.onclick=function(){var id=b.getAttribute("data-w"),x=ITEMS.filter(function(i){return i.id===id})[0],slug=({r1:"room-forest",r2:"room-sunset",r3:"room-night"})[id]||id;
+  if(IN){api("/api/shop/equip/"+slug,"POST").then(function(r){if(x.k==="a"){var k=S.worn.indexOf(id);if(r.equipped&&k<0)S.worn.push(id);if(!r.equipped&&k>=0)S.worn.splice(k,1)}else S.room=r.equipped?id:"";save();render()}).catch(function(e){alert(e.message)})}
+  else{if(x.k==="a"){var k=S.worn.indexOf(id);if(k>=0)S.worn.splice(k,1);else S.worn.push(id)}else S.room=S.room===id?"":id;save();render()}}});
  if(q("sv"))q("sv").onclick=function(){var s=q("rs").value,e=q("re").value;if(!s||!e||pd(e)<=pd(s)){q("se").textContent="Проверьте даты.";return}
   S.start=s;S.end=e;S.name=q("rn").value.trim()||S.name;save();tab="pet";render()};
- if(q("rst"))q("rst").onclick=function(){if(confirm("Удалить прогресс и начать заново?")){S=null;draft={sp:"cat"};try{localStorage.removeItem(KEY)}catch(e){}if(CS){try{CS.removeItem(KEY)}catch(e){}}render()}}}
+ if(q("rst"))q("rst").onclick=function(){if(confirm("Удалить прогресс и начать заново?")){S=null;draft={sp:"cat"};try{localStorage.removeItem(KEY)}catch(e){}if(CS){try{CS.removeItem(KEY)}catch(e){}}render()}};
+ if(tab==="games")bindGames();if(tab==="admin")bindAdmin();}
+function bindGames(){
+ var box=document.getElementById("gamebox");
+ function startGame(g){api("/api/games/start/"+g).then(function(r){gameState=r;var c=r.challenge,html='<div class="card"><b>'+({memory:"🧠 Армейская память",barracks:"🛏️ Казарменный порядок",demob_math:"🔢 Дембельский счёт"}[g])+'</b><p class="mut">'+c.hint+'</p>';
+ if(g==="memory"){html+='<p class="big">'+c.length+' предмета</p><div id="memoryseq" style="font-size:30px;text-align:center;letter-spacing:8px">'+c.sequence.join(" ")+'</div><p class="mut">Запомните последовательность. Через 4 секунды она скроется.</p><input id="ganswer" type="text" placeholder="🪖 🥾 🥤"><button id="gsubmit" style="width:100%;margin-top:10px">Ответить</button>';
+
+ }else if(g==="barracks"){html+='<p>Перемешанные предметы: '+c.items.join(" ")+'</p><p class="mut">Введите предметы в порядке соответствующих мест:</p><p>'+c.places.join(" → ")+'</p><input id="ganswer" type="text" placeholder="Введите предметы в порядке мест"><button id="gsubmit" style="width:100%;margin-top:10px">Проверить</button>';
+ }else{html+='<h2>'+c.question+'</h2><input id="ganswer" type="text" inputmode="numeric" placeholder="Ваш ответ"><button id="gsubmit" style="width:100%;margin-top:10px">Ответить</button>'}
+ html+='</div>';box.innerHTML=html;
+ if(g==="memory"){setTimeout(function(){var el=document.getElementById("memoryseq");if(el)el.textContent="❔  ❔  ❔  ❔  ❔  ❔"},4000)}
+ document.getElementById("gsubmit").onclick=function(){var raw=document.getElementById("ganswer").value.trim(),answer=g==="demob_math"?Number(raw):raw.split(/[\s,]+/).filter(Boolean);if(g==="memory"||g==="barracks"){if(!raw){alert("Введите ответ");return}}else if(!Number.isInteger(answer)){alert("Введите целое число");return}api("/api/games/finish","POST",{token:r.token,answer:answer}).then(function(x){box.innerHTML='<div class="card"><h2>Результат: '+x.score+'</h2><p>Награда: +'+x.reward+' 🪙</p><p>Баланс: '+x.coins+' монет</p><button onclick="location.reload()">Готово</button></div>';S.coins=x.coins;save()}).catch(function(e){alert(e.message)})};
+ }).catch(function(e){alert(e.message)})}
+ document.querySelectorAll("[data-game]").forEach(function(b){b.onclick=function(){startGame(b.getAttribute("data-game"))}});
+ Promise.all(["memory","barracks","demob_math"].map(function(g){return api("/api/games/leaderboard/"+g).then(function(rows){return{game:g,rows:rows}})})).then(function(all){var el=document.getElementById("leader");if(el)el.innerHTML=all.map(function(x){return"<b>"+({memory:"Армейская память",barracks:"Казарменный порядок",demob_math:"Дембельский счёт"}[x.game])+"</b><br>"+(x.rows.map(function(r,i){return(i+1)+". "+esc(r.username)+" — "+r.score}).join("<br>")||"Пока нет результатов")}).join("<br><br>")}).catch(function(){});
+}
+function bindAdmin(){document.querySelectorAll("[data-admin]").forEach(function(b){b.onclick=function(){var box=document.getElementById("adminbox"),act=b.getAttribute("data-admin");box.textContent="Загрузка…";
+ if(act==="stats"){box.innerHTML='<h2>Статистика</h2><div class="row"><button class="sec" data-period="day">День</button><button class="sec" data-period="week">Неделя</button><button class="sec" data-period="month">Месяц</button></div><div id="statsrows"></div>';function loadStats(period){api("/api/admin/stats?period="+period).then(function(x){document.getElementById("statsrows").innerHTML=Object.keys(x).filter(function(k){return k!=="period"}).map(function(k){return'<div class="item"><div class="t">'+k+'</div><b>'+x[k]+'</b></div>'}).join("")})}document.querySelectorAll("[data-period]").forEach(function(z){z.onclick=function(){loadStats(z.getAttribute("data-period"))}});loadStats("month")}
+ if(act==="users")box.innerHTML='<h2>Пользователи</h2><input id="userq" placeholder="Telegram ID или username"><button id="usersearch" style="margin-top:8px">Найти</button><div id="userrows"></div>';
+ if(act==="users")setTimeout(function(){document.getElementById("usersearch").onclick=function(){api("/api/admin/users?q="+encodeURIComponent(document.getElementById("userq").value)).then(function(rows){document.getElementById("userrows").innerHTML=rows.map(function(u){return'<div class="item"><div class="t"><b>'+esc(u.username||u.first_name||"Без имени")+'</b><div class="mut">ID '+u.telegram_id+' · '+u.coins+' 🪙 · '+u.role+' · '+u.status+'</div></div><button data-uid="'+u.id+'">Профиль</button><button class="sec" data-balance="'+u.id+'">±🪙</button><button class="sec" data-status="'+u.id+'">'+(u.status==="ACTIVE"?"Блок":"Разблок")+'</button><button class="sec" data-grant="'+u.id+'">🎁</button>'+(ROLE==="SUPERADMIN"?'<button class="sec" data-role="'+u.id+'">Роль</button>':"")+'</div>'}).join("");document.querySelectorAll("[data-uid]").forEach(function(z){z.onclick=function(){api("/api/admin/users/"+z.getAttribute("data-uid")).then(function(d){alert(JSON.stringify(d,null,2))})}});document.querySelectorAll("[data-balance]").forEach(function(z){z.onclick=function(){var amount=Number(prompt("Изменение баланса (можно отрицательное число):","10"));if(!Number.isInteger(amount))return;var reason=prompt("Причина изменения:","Административная корректировка");if(!reason)return;api("/api/admin/users/"+z.getAttribute("data-balance")+"/balance","POST",{amount:amount,reason:reason}).then(function(){alert("Баланс обновлён");document.getElementById("usersearch").click()}).catch(function(e){alert(e.message)})}});document.querySelectorAll("[data-status]").forEach(function(z){z.onclick=function(){var target=rows.filter(function(u){return u.id==z.getAttribute("data-status")})[0],next=target.status==="ACTIVE"?"BLOCKED":"ACTIVE";if(!confirm("Изменить статус на "+next+"?"))return;api("/api/admin/users/"+target.id+"/status/"+next,"POST").then(function(){document.getElementById("usersearch").click()}).catch(function(e){alert(e.message)})}});document.querySelectorAll("[data-grant]").forEach(function(z){z.onclick=function(){var pid=Number(prompt("ID товара из каталога:","1"));if(!Number.isInteger(pid))return;api("/api/admin/users/"+z.getAttribute("data-grant")+"/inventory","POST",{product_id:pid}).then(function(){alert("Предмет выдан");}).catch(function(e){alert(e.message)})}});document.querySelectorAll("[data-role]").forEach(function(z){z.onclick=function(){var target=rows.filter(function(u){return u.id==z.getAttribute("data-role")})[0],next=target.role==="ADMIN"?"USER":"ADMIN";if(!confirm("Назначить роль "+next+"?"))return;api("/api/admin/users/"+target.id+"/role","POST",{role:next}).then(function(){document.getElementById("usersearch").click()}).catch(function(e){alert(e.message)})}})})}},0);
+ if(act==="products")api("/api/admin/products").then(function(rows){box.innerHTML='<h2>Товары</h2><div class="card"><b>Добавить товар</b><label>Системный slug</label><input id="p-slug" placeholder="new-item"><label>Название</label><input id="p-name" placeholder="Название"><label>Описание</label><input id="p-desc"><label>Категория</label><input id="p-cat" value="Аксессуары"><label>Цена</label><input id="p-price" type="number" value="50"><label>Эмодзи / изображение</label><input id="p-image" value="🎁"><button id="p-create" style="margin-top:10px">Создать</button></div>'+rows.map(function(p){return'<div class="item"><div class="e">'+esc(p.image)+'</div><div class="t">'+esc(p.name)+'<div class="mut">'+p.price+' монет · '+(p.available?"доступен":"скрыт")+'</div></div><button class="sec" data-toggle="'+p.id+'">'+(p.available?"Скрыть":"Показать")+'</button></div>'}).join("");document.getElementById("p-create").onclick=function(){var d={slug:document.getElementById("p-slug").value,name:document.getElementById("p-name").value,description:document.getElementById("p-desc").value,category:document.getElementById("p-cat").value,price:Number(document.getElementById("p-price").value),image:document.getElementById("p-image").value,item_type:"accessory",rarity:"common",available:true,unique_item:true,sort_order:0};api("/api/admin/products","POST",d).then(function(){alert("Товар создан");b.click()}).catch(function(e){alert(e.message)})};document.querySelectorAll("[data-toggle]").forEach(function(z){z.onclick=function(){var p=rows.filter(function(x){return x.id==z.getAttribute("data-toggle")})[0];p.available=!p.available;api("/api/admin/products/"+p.id,"PUT",p).then(function(){alert("Изменено");b.click()}).catch(function(e){alert(e.message)})}})});
+ if(act==="logs")api("/api/admin/logs").then(function(rows){box.innerHTML='<h2>Журнал действий</h2>'+rows.map(function(x){return'<div class="item"><div class="t"><b>'+esc(x.action)+'</b><div class="mut">'+new Date(x.created_at).toLocaleString()+" · админ #"+x.actor_id+'</div></div></div>'}).join("")});
+ if(act==="settings")api("/api/admin/settings").then(function(rows){box.innerHTML='<h2>Настройки приложения</h2><p class="mut">Значения хранятся в БД как JSON.</p><label>Ключ</label><input id="settingkey" placeholder="daily_reward"><label>Значение JSON</label><textarea id="settingvalue" rows="4" style="width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:10px">{"value":10}</textarea><button id="settingsave">Сохранить настройку</button><hr>'+Object.keys(rows).map(function(k){return'<div class="item"><div class="t"><b>'+esc(k)+'</b><div class="mut">'+esc(JSON.stringify(rows[k]))+'</div></div></div>'}).join("");document.getElementById("settingsave").onclick=function(){var k=document.getElementById("settingkey").value.trim(),v;try{v=JSON.parse(document.getElementById("settingvalue").value)}catch(e){alert("Некорректный JSON");return}if(!k){alert("Введите ключ");return}api("/api/admin/settings/"+encodeURIComponent(k),"PUT",v).then(function(){alert("Настройка сохранена");b.click()}).catch(function(e){alert(e.message)})}});
+ }});}
 function tick(){
  if(!S||tab!=="pet")return;var el=document.getElementById("hm");if(!el)return;
  var l=Math.max(0,pd(S.end)-new Date()),h=Math.floor(l/36e5)%24,m=Math.floor(l/6e4)%60,s=Math.floor(l/1e3)%60;
  el.textContent=h+" ч "+m+" мин "+s+" с"}
-setInterval(tick,1000);load(function(){render()});
+setInterval(tick,1000);
+function loadCatalog(){
+ if(!IN)return Promise.resolve();
+ return api("/api/shop/products").then(function(rows){
+  ITEMS=rows.map(function(p){
+   var id=({"room-forest":"r1","room-sunset":"r2","room-night":"r3"})[p.slug]||p.slug;
+   return {id:id,e:p.image||"🎁",n:p.name,p:p.price,k:p.item_type==="interior"?"r":"a",a:id==="r1"?"#cfe8c6":id==="r2"?"#f6d3a8":id==="r3"?"#2c3a63":undefined,b:id==="r1"?"#f4f1ea":id==="r2"?"#f4e6d6":id==="r3"?"#151a2e":undefined};
+  });
+ }).catch(function(e){console.warn("Catalog unavailable; using bundled fallback",e)});
+}
+function boot(){
+ if(!IN){load(function(){render()});return}
+ api("/api/me").then(function(u){
+  ROLE=u.role||"USER";if(u.pet_name&&u.service_start&&u.demob_date){
+   S={name:u.pet_name,sp:u.pet_type||"cat",start:u.service_start,end:u.demob_date,coins:u.coins,lastClaim:u.last_daily||"",owned:(u.progress&&u.progress.owned)||[],worn:(u.progress&&u.progress.worn)||[],room:(u.progress&&u.progress.room)||"",pat:(u.progress&&u.progress.pat)||{d:"",n:0}};
+   api("/api/shop/inventory").then(function(rows){rows.forEach(function(x){var id=({"room-forest":"r1","room-sunset":"r2","room-night":"r3"})[x.slug]||x.slug;if(S.owned.indexOf(id)<0)S.owned.push(id);if(x.equipped){if(x.item_type==="interior")S.room=id;else if(S.worn.indexOf(id)<0)S.worn.push(id)}});save();render()}).catch(function(){save();render()});
+  }else{load(function(){if(S){api("/api/import-legacy","POST",{state:S}).then(function(){serverSync()}).catch(function(e){console.warn(e)})}render()})}
+ }).catch(function(e){console.warn("Server unavailable; loading local cache",e);load(function(){render()})});
+}
+loadCatalog().then(boot);
 </script>
 </body>
 </html>
