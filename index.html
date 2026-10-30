@@ -61,12 +61,12 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;
 var SPECIES={cat:{n:"Котик",c:"#e9a35b"},bear:{n:"Мишка",c:"#a67c52"},blob:{n:"Зверёк",c:"#7fb7be"}};
 var STAGES=[[0,"Яйцо",.5],[.08,"Малыш",.65],[.25,"Юный",.8],[.5,"Взрослый",.9],[.75,"Закалённый",1],[.95,"Дембель",1.07]];
 var ITEMS=[
-{id:"cap",e:"🧢",n:"Кепка",p:30,k:"a"},{id:"glass",e:"🕶",n:"Очки",p:40,k:"a"},
-{id:"scarf",e:"🧣",n:"Шарф",p:50,k:"a"},{id:"medal",e:"🎖",n:"Медаль",p:80,k:"a"},
-{id:"star",e:"⭐",n:"Звезда",p:60,k:"a"},
-{id:"r1",e:"🌿",n:"Комната «Лес»",p:70,k:"r",a:"#cfe8c6",b:"#f4f1ea"},
-{id:"r2",e:"🌅",n:"Комната «Закат»",p:90,k:"r",a:"#f6d3a8",b:"#f4e6d6"},
-{id:"r3",e:"🌌",n:"Комната «Ночь»",p:120,k:"r",a:"#2c3a63",b:"#151a2e"}];
+{id:"cap",e:"🧢",n:"Кепка",p:1,k:"a"},{id:"glass",e:"🕶",n:"Очки",p:40,k:"a"},
+{id:"scarf",e:"🧣",n:"Шарф",p:1,k:"a"},{id:"medal",e:"🎖",n:"Медаль",p:80,k:"a"},
+{id:"star",e:"⭐",n:"Звезда",p:1,k:"a"},
+{id:"r1",e:"🌿",n:"Комната «Лес»",p:1,k:"r",a:"#cfe8c6",b:"#f4f1ea"},
+{id:"r2",e:"🌅",n:"Комната «Закат»",p:1,k:"r",a:"#f6d3a8",b:"#f4e6d6"},
+{id:"r3",e:"🌌",n:"Комната «Ночь»",p:1,k:"r",a:"#2c3a63",b:"#151a2e"}];
 var POS={cap:[0,-42,46],glass:[0,6,40],scarf:[0,52,44],medal:[30,44,30],star:[-36,-34,28]};
 function calc(){
  var now=new Date(),s=pd(S.start),e=pd(S.end),tot=e-s,p=Math.min(1,Math.max(0,(now-s)/tot)),left=e-now;
